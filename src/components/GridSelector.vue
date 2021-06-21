@@ -1,17 +1,75 @@
 <template>
-  <div class="grid">
-    <textarea
-      v-model="clustersConfig"
-      class="clusterConfigTextArea"
-    />
-    <button class="generateClusters" @click="generateClusters">Generate Clusters</button>
-    <div id="my_dataviz"></div>
-    <!--    <canvas-->
-    <!--      class="grid-canvas"-->
-    <!--      width="500px"-->
-    <!--      height="500px">-->
-    <!--    </canvas>-->
-  </div>
+
+  <v-container>
+    <v-row
+      class="mb-6"
+    >
+      <v-col
+        md="10"
+      > Clusters major points:
+        <prism-editor
+          style="height: 500px"
+          class="my-editor"
+          v-model="clustersConfig"
+          :highlight="highlighter"
+          line-numbers
+        >
+        </prism-editor>
+      </v-col>
+      <v-col
+        md="2"
+        class="mt-6"
+      >
+        <v-row >
+          <v-col md="12">
+            <v-text-field
+              label="Grid Width"
+              type="number"
+              v-model="grid_x"
+              hide-details="auto"
+            ></v-text-field>
+          </v-col>
+
+          <v-col md="12">
+            <v-text-field
+              label="Grid Height"
+              type="number"
+              v-model="grid_y"
+              hide-details="auto"
+            ></v-text-field>
+          </v-col>
+
+          <v-col md="12">
+            <v-text-field
+              label="Trajectories Per Cluster"
+              type="number"
+              v-model="trajs_count"
+              hide-details="auto"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+      </v-col>
+    </v-row>
+    <v-row
+      no-gutters
+    >
+      <v-col md="12" class="align-center align-content-center text-center">
+        <v-btn
+          depressed
+          color="primary"
+          @click="generateClusters"
+          href="#my_dataviz"
+          v-smooth-scroll
+        >
+          Generate Clusters
+        </v-btn>
+      </v-col>
+      <v-col md="12" class="align-center align-content-center text-center">
+        <div id="my_dataviz"></div>
+      </v-col>
+    </v-row>
+
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -19,13 +77,28 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { atan2, cos, norm, random, sin } from 'mathjs';
 
-@Component
-export default class HelloWorld extends Vue {
-  @Prop() private msg!: string;
-  @Prop() private grid_x: number = 500;
-  @Prop() private grid_y: number = 500;
+import { PrismEditor } from 'vue-prism-editor';
+import 'vue-prism-editor/dist/prismeditor.min.css'; // import the styles somewhere
 
-  // List of visually different colors
+// import highlighting library (you can use any library you want just return html string)
+import { highlight, languages } from 'prismjs/components/prism-core';
+import 'prismjs/components/prism-clike';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-json';
+import 'prismjs/themes/prism-tomorrow.css'; // import syntax highlighting styles
+
+import vueSmoothScroll from 'vue-smooth-scroll';
+Vue.use(vueSmoothScroll)
+
+
+@Component
+export default class GridSelector extends Vue {
+
+  private grid_x: number = 500;
+  private grid_y: number = 500;
+  private trajs_count: number = 20;
+
+  // List of visually different colors to render groups
   private COLORS = ["#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059", "#FFDBE5", "#7A4900", "#0000A6",
     "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87", "#5A0007", "#809693", "#FEFFE6", "#1B4400", "#4FC601",
     "#3B5DFF", "#4A3B53", "#FF2F80", "#61615A", "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA",
@@ -127,7 +200,7 @@ export default class HelloWorld extends Vue {
     try {
       const clusterMajorPoints = JSON.parse(this.clustersConfig);
       const SAMPLE_RATE = 10;
-      const TRAJECTORY_COUNT_PER_CLUSTER = 5;
+      const TRAJECTORY_COUNT_PER_CLUSTER = this.trajs_count;
       clusterMajorPoints.map((cluster: number[], cIndex: number)=>{
         cluster.map((point, pIndex: number) => {
           clusterMajorPoints[cIndex][pIndex][1] = this.grid_x - clusterMajorPoints[cIndex][pIndex][1];
@@ -193,6 +266,7 @@ export default class HelloWorld extends Vue {
       const height = this.grid_y;
 
       // append the svg object to the body of the page
+      d3.select('#my_dataviz').selectAll("*").remove();
       const svg = d3.select('#my_dataviz')
         .append('svg')
         .attr('width', width + margin.left + margin.right)
@@ -243,21 +317,36 @@ export default class HelloWorld extends Vue {
   mounted() {
     //
   }
+
+  highlighter(code) {
+    return highlight(code, languages.json); //returns html
+  }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
-.grid {
-  .clusterConfigTextArea{
-    width: 300px;
-    height: 200px;
-  }
+/* required class */
+.my-editor {
+  /* we dont use `language-` classes anymore so thats why we need to add background and text color manually */
+  background: #2d2d2d;
+  color: #ccc;
 
-  .generateClusters{
-    display: block;
-    margin: auto;
-  }
+  /* you must provide font-family font-size line-height. Example: */
+  font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 5px;
+}
+
+/* optional class for removing the outline */
+.prism-editor__textarea:focus {
+  outline: none;
+}
+
+
+.grid {
+
 
 }
 </style>

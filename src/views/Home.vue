@@ -1,18 +1,16 @@
 <template>
-  <div class="home">
-<!--    <img alt="Vue logo" src="../assets/logo.png">-->
-    <grid-selector msg="Welcome to Your Vue.js + TypeScript App"/>
-  </div>
+  <grid-selector />
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import GridSelector from '@/components/GridSelector.vue'; // @ is an alias to /src
+import Vue from 'vue';
+import GridSelector from '../components/GridSelector.vue';
 
-@Component({
+export default Vue.extend({
+  name: 'Home',
+
   components: {
     GridSelector,
   },
-})
-export default class Home extends Vue {}
+});
 </script>

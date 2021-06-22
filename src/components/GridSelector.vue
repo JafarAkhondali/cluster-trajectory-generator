@@ -63,6 +63,13 @@
         >
           Generate Clusters
         </v-btn>
+        <v-btn
+          depressed
+          color="secondary"
+          @click="downloadData"
+        >
+          Download dataset
+        </v-btn>
       </v-col>
       <v-col md="12" class="align-center align-content-center text-center">
         <div id="my_dataviz"></div>
@@ -81,6 +88,7 @@ import { PrismEditor } from 'vue-prism-editor';
 import 'vue-prism-editor/dist/prismeditor.min.css'; // import the styles somewhere
 
 // import highlighting library (you can use any library you want just return html string)
+//@ts-ignore
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -196,8 +204,35 @@ export default class GridSelector extends Vue {
     ]
 ]`;
 
+  private clusters: number[][][] = [];
+
+  // Function to download data to a file
+  //@ts-ignore
+  download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+      window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+      var a = document.createElement("a"),
+        url = URL.createObjectURL(file);
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
+    }
+  }
+
+  downloadData(){
+    this.download(JSON.stringify(this.clusters), 'dataset.json', 'text');
+  }
+
   generateClusters(){
     try {
+      this.clusters = []
       const clusterMajorPoints = JSON.parse(this.clustersConfig);
       const SAMPLE_RATE = 10;
       const TRAJECTORY_COUNT_PER_CLUSTER = this.trajs_count;
@@ -207,7 +242,6 @@ export default class GridSelector extends Vue {
         });
       });
 
-      const clusters: number[][][] = [];
       clusterMajorPoints.map((cluster: number[][], cIndex: number)=>{
         let optional_turn_point;
         let end_point;
@@ -250,9 +284,10 @@ export default class GridSelector extends Vue {
             // Append point to target
             path.push(last_point)
           }
+          //@ts-ignore
           current_cluster_trajectories.push(path)
         }
-        clusters.push(current_cluster_trajectories);
+        this.clusters.push(current_cluster_trajectories);
       });
 
 
@@ -266,7 +301,9 @@ export default class GridSelector extends Vue {
       const height = this.grid_y;
 
       // append the svg object to the body of the page
+      //@ts-ignore
       d3.select('#my_dataviz').selectAll("*").remove();
+      //@ts-ignore
       const svg = d3.select('#my_dataviz')
         .append('svg')
         .attr('width', width + margin.left + margin.right)
@@ -276,6 +313,7 @@ export default class GridSelector extends Vue {
           `translate(${margin.left},${margin.top})`);
 
       // Add X axis --> it is a date format
+      //@ts-ignore
       const x = d3.scaleLinear()
         .domain([0, this.grid_x])
         .range([0, width]);
@@ -295,7 +333,7 @@ export default class GridSelector extends Vue {
         .x((d: any) => x(d[0]))
         .y((d: any) => y(d[1]));
 
-      clusters.map((cluster, i) => {
+      this.clusters.map((cluster, i) => {
         svg.selectAll('myLines')
           .data(cluster)
           .enter()
@@ -309,7 +347,7 @@ export default class GridSelector extends Vue {
       });
     } catch (e) {
       console.log(e.message)
-      alert(`Generating clusters failed!: {e.message}`);
+      alert(`Generating clusters failed!: ${e.message}`);
     }
 
   }
@@ -318,7 +356,7 @@ export default class GridSelector extends Vue {
     //
   }
 
-  highlighter(code) {
+  highlighter(code:string) {
     return highlight(code, languages.json); //returns html
   }
 }
